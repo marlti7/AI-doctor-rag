@@ -31,8 +31,10 @@
 
 - 上传/删除知识库中的文件（pdf/docx）
 
-[知识库管理]
-![Uploading 截屏2026-09-09 19.22.23.png…]()
+[知识库管理](
+<img width="1419" height="775" alt="截屏2026-09-09 19 22 23" src="https://github.com/user-attachments/assets/9f0df26f-9a55-4fa3-ab7e-0b6251d85058" />
+
+)
 
 
 
