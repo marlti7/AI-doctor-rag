@@ -54,11 +54,46 @@ export class MCPClient {
         // if (!this.sessionId) {
         //     throw new Error("未连接到服务端，请先调用 connectToServer()");
         // }
+        let args: any
+        try {
+            args = JSON.parse(toolCallArgsStr)
+        } catch (err) {
+            // JSON 解析失败：尝试从可能的拼接 JSON 字符串中提取独立对象并解析
+            console.warn('callTool: 原始参数无法解析为 JSON，尝试从拼接内容中恢复。 raw:', toolCallArgsStr)
+            const matches = toolCallArgsStr.match(/\{[^}]*\}/gs) || []
+            const parsedList: any[] = []
+            for (const m of matches) {
+                try {
+                    parsedList.push(JSON.parse(m))
+                } catch (e) {
+                    // 忽略单个片段的解析错误
+                    continue
+                }
+            }
+            if (parsedList.length === 1) {
+                args = parsedList[0]
+            } else if (parsedList.length > 1) {
+                // 优先选择包含 clarified_question 的对象，否则合并所有对象字段
+                const found = parsedList.find(p => p && typeof p === 'object' && 'clarified_question' in p)
+                if (found) args = found
+                else args = Object.assign({}, ...parsedList)
+            } else {
+                // 回退：尝试通过正则直接提取 clarified_question 字符串
+                const m2 = toolCallArgsStr.match(/"clarified_question"\s*:\s*"([\s\S]*?)"/)
+                if (m2) {
+                    args = { clarified_question: m2[1] }
+                } else {
+                    // 无法恢复有效参数，抛出错误以便上层处理
+                    throw new SyntaxError('无法解析工具调用参数: ' + toolCallArgsStr)
+                }
+            }
+        }
+
         const result = await this.client.callTool({
             name: toolName,
-            arguments: JSON.parse(toolCallArgsStr),
+            arguments: args,
         })
-        console.log('调用工具的结果', result, toolName, JSON.parse(toolCallArgsStr))
+        console.log('调用工具的结果', result, toolName, args)
         return result
     }
     // 获取当前 sessionId 的方法

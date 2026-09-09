@@ -62,13 +62,18 @@ app.post('/mcp', async (req, res) => {
         "getIntent",
         intentUnderstandingPrompt,
         {
-            clarified_question: z.string().describe('如果问题存在续问，结合上下文生成完整问题，若无续问，忽略此字段')
-        },
+        clarified_question: z
+            .string()
+            .optional()
+            .describe(
+                '如果用户是续问，请结合上下文生成完整问题；如果不是续问，可以不填写'
+            )
+    },
         async ({ clarified_question }) => ({
             content: [
                 {
                     type: "text",
-                    text: clarified_question,
+                    text: clarified_question || '',
                 },
             ],
         }),

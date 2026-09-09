@@ -52,7 +52,7 @@ export class ChatService {
         //通义千问
         this.openai = new OpenAI({
             apiKey: this.configService.get('QWEN_API_KEY') as string,
-            baseURL: 'https://ws-juo5nzf4x48p5xco.cn-beijing.maas.aliyuncs.com/compatible-mode/v1'
+            baseURL: "https://ws-juo5nzf4x48p5xco.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
         })
     }
     //通知流
@@ -217,6 +217,9 @@ export class ChatService {
                 this.notifyStream(stream, readFileList)
             }
 
+            // 记录请求的工具选择（用于调试前端选择与模型实际调用不一致的问题）
+            console.log('请求的 toolChoice:', toolChoice, 'isKnowledgeBased:', isKnowledgeBased)
+
             //工具名称
             let toolName = ''
             //存放拼接的新问题
@@ -235,24 +238,86 @@ export class ChatService {
                 // console.log(JSON.stringify(chunk))
                 //收集并拼接工具参数
                 if (chunkObj.tool_calls && chunkObj.tool_calls[0].function?.name) {
-                    toolName = chunkObj.tool_calls[0].function.name
+                    const calledName = chunkObj.tool_calls[0].function.name
+                    toolName = calledName
                     toolUsing = {
                         toolStatus: '工具调用中',
                         toolName: toolName,
                         toolResult: ''
                     }
+                    // 记录模型实际调用的工具名
+                    console.log('模型选择调用的工具:', calledName, '（model-chosen tool） 请求的toolChoice为:', toolChoice)
                     // console.log('工具调用中', toolUsing)
                     this.notifyStream(stream, toolUsing)
                 }
                 //判断用户是否选择知识库回答，也就是出发工具调用
                 if (chunkObj.tool_calls && chunkObj.tool_calls[0].function.arguments) {
-                    toolCallArgsStr += chunkObj.tool_calls[0].function.arguments
+                    // 累积来自流的 function.arguments 片段（通常为字符串片段）
+                    toolCallArgsStr += String(chunkObj.tool_calls[0].function.arguments || '')
                     isToolCallStarted = true
                 }
                 //判断工具回复结束，处理新问题
-                if (chunk.choices[0].finish_reason === 'tool_calls' || chunk.choices[0].finish_reason === 'stop' && isToolCallStarted) {
-                    //取出新问题
-                    const newQuestion = JSON.parse(toolCallArgsStr)
+                if ((chunk.choices[0].finish_reason === 'tool_calls' || chunk.choices[0].finish_reason === 'stop') && isToolCallStarted) {
+                    // 结束工具调用，尝试从累积的片段中解析 JSON
+                    let newQuestion: any = null
+                    try {
+                        newQuestion = JSON.parse(toolCallArgsStr)
+                    } catch (err) {
+                        // 首次解析失败：尝试从可能拼接的多个 JSON 中提取包含 clarified_question 的对象
+                        this.logger.warn('首次解析工具参数JSON失败，尝试从拼接内容提取对象: ' + err)
+                        let extracted: string | null = null
+                        try {
+                            // 优先用正则匹配包含 clarified_question 的完整对象
+                            const m = toolCallArgsStr.match(/\{[^}]*"clarified_question"[^}]*\}/s)
+                            if (m && m[0]) extracted = m[0]
+                            else {
+                                // 如果没有 clarified_question 字段，尝试把拼接的 JSON 字符串按 '}{' 分割并逐个解析
+                                const parts = toolCallArgsStr.split(/}\s*\{/) // 会丢失中间的 '}{'，需补回
+                                for (let i = 0; i < parts.length; i++) {
+                                    let candidate = parts[i]
+                                    if (parts.length > 1) {
+                                        if (i !== 0) candidate = '{' + candidate
+                                        if (i !== parts.length - 1) candidate = candidate + '}'
+                                    }
+                                    candidate = candidate.trim()
+                                    if (!candidate) continue
+                                    try {
+                                        const parsed = JSON.parse(candidate)
+                                        // 如果解析出的对象包含 clarified_question，则选中它
+                                        if (parsed && typeof parsed === 'object' && 'clarified_question' in parsed) {
+                                            extracted = candidate
+                                            break
+                                        }
+                                    } catch (e) {
+                                        // 忽略单个片段的解析错误，继续尝试下一个
+                                        continue
+                                    }
+                                }
+                            }
+                        } catch (extractionErr) {
+                            this.logger.error('从拼接字符串中提取JSON对象时出错: ' + extractionErr)
+                        }
+
+                        if (extracted) {
+                            try {
+                                newQuestion = JSON.parse(extracted)
+                            } catch (err2) {
+                                this.logger.error('解析提取出的JSON对象失败: ' + err2 + ' extracted:' + extracted)
+                                this.notifyStream(stream, { role: 'error', content: '工具参数解析失败，已跳过该工具调用' })
+                                toolCallArgsStr = ''
+                                isToolCallStarted = false
+                                continue
+                            }
+                        } else {
+                            // 解析和提取都失败：记录并通知前端，但不中断整个流
+                            this.logger.error('解析工具参数JSON失败: ' + err + ' raw:' + toolCallArgsStr)
+                            this.notifyStream(stream, { role: 'error', content: '工具参数解析失败，已跳过该工具调用' })
+                            // 重置累积器，继续处理后续流
+                            toolCallArgsStr = ''
+                            isToolCallStarted = false
+                            continue
+                        }
+                    }
                     if (newQuestion && typeof newQuestion === 'object' && 'clarified_question' in newQuestion && newQuestion.clarified_question.trim() !== '') {
                         console.log('工具生成了新问题-----')
                         console.log(newQuestion.clarified_question)
@@ -268,6 +333,9 @@ export class ChatService {
                         const res = await this.queryKb(stream, newQuestion.clarified_question, userId, messageList, readFileList)
                         assistantMessage = res.assistantMessage
                         readFileList = res.readFileList
+                        // 重置累积器
+                        toolCallArgsStr = ''
+                        isToolCallStarted = false
                     } else if (toolName === 'crawlWeb') {
                         let assistantMessageByCrawlWeb = ''
                         const result: any = await this.mcpClient.callTool(toolName, toolCallArgsStr);
@@ -283,7 +351,7 @@ export class ChatService {
                         messageList.push({ role: 'user', content: result.content[0].text as string, displayContent: lastItem.content })
                         const toolStream = await this.openai.chat.completions.create({
                             // 您可以按需更换为其它 Qwen3 模型、QwQ模型或DeepSeek-R1 模型
-                            model: 'qwen-turbo',
+                            model: "qwen-max",
                             messages: messageList,
                             stream: true,
                             enable_thinking: false
@@ -315,6 +383,9 @@ export class ChatService {
                             }
                         }
                         assistantMessage = assistantMessageByCrawlWeb
+                        // 重置累积器
+                        toolCallArgsStr = ''
+                        isToolCallStarted = false
                     }
                     else {
                         //整理新问题， 查询知识库
@@ -324,6 +395,9 @@ export class ChatService {
                         assistantMessage = res.assistantMessage
                         readFileList = res.readFileList
                         console.log('工具没有生成新问题')
+                        // 重置累积器
+                        toolCallArgsStr = ''
+                        isToolCallStarted = false
                     }
                 }
                 //用户没有选择知识库按钮，content就是大模型返回的结果
@@ -413,13 +487,22 @@ export class ChatService {
             }
         }
         console.log('调用模型的工具', tool);
+        console.log(
+        '🔥🔥🔥 当前发送给Qwen的tools:',
+        JSON.stringify(this.mcpClient.getTools(), null, 2)
+        )
+        // 仅在前端显式选择了工具时，限制发送给模型的 tools 列表为所选工具，
+        // 否则发送全部工具让模型自由选择。
+        const allTools = this.mcpClient.getTools()
+        const toolsToSend = toolChoice ? allTools.filter(t => t.function?.name === toolChoice) : allTools
+
         const res = await this.openai.chat.completions.create({
-            model: "qwen-turbo",  //此处以qwen-turbo为例，可按需更换模型名称。模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
+            model: "qwen-max",  //此处以qwen-max为例，可按需更换模型名称。模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
             messages: [
                 { role: "system", content: medAssistantDataPrompt },
                 ...messageList
             ],
-            tools: this.mcpClient.getTools(),
+            tools: (toolsToSend && toolsToSend.length > 0) ? toolsToSend : allTools,
             enable_thinking: false,
             stream: true,
             tool_choice: tool

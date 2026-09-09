@@ -36,7 +36,7 @@ export class FilemanagementService {
         // console.log('QWEN_API_KEY 前缀:', key?.slice(0, 7));
         this.openai = new OpenAI({
             apiKey: this.configService.get('QWEN_API_KEY') as string,
-            baseURL: 'https://ws-juo5nzf4x48p5xco.cn-beijing.maas.aliyuncs.com/compatible-mode/v1'
+            baseURL: this.configService.get('QWEN_API_BASE_URL') as string,
         })
     }
     //读取文档，知识库需要拆分文档，对话框上传的不拆分, 'UD'对话框, 'UB'知识库
@@ -337,8 +337,10 @@ export class FilemanagementService {
 
     //让模型提取关键词
     async extractKeywords(content: string) {
+        // 从配置读取模型名称（不要使用 base URL）
+        const modelName = (this.configService.get('QWEN_MODEL') as string) || 'qwen-max'
         const res = await this.openai.chat.completions.create({
-            model: "qwen-turbo",  //此处以qwen-turbo为例，可按需更换模型名称。模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
+            model: modelName, // 使用配置的模型名，默认 qwen-max
             messages: [
                 { role: "system", content: kwExtractionPrompt },
                 { role: "user", content }
