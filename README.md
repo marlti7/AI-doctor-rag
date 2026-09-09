@@ -10,7 +10,7 @@
 - 保留和区分每个账号的对话记录
 - 可注册/登陆/退出账号
 
-![登陆注册](
+[登陆注册](
 <img width="1419" height="776" alt="截屏2026-09-09 15 50 42" src="https://github.com/user-attachments/assets/1fd37943-4d4f-4441-98a2-d192366d244b" />
 
 )
@@ -31,7 +31,9 @@
 
 - 上传/删除知识库中的文件（pdf/docx）
 
-![知识库管理](https://github.com/Jevon-Zhong/AI-doctor-rag/blob/main/images/%E7%9F%A5%E8%AF%86%E5%BA%93%E7%AE%A1%E7%90%86.png?raw=true)
+知识库管理
+![Uploading 截屏2026-09-09 19.22.23.png…]()
+
 
 
 
