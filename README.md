@@ -45,7 +45,8 @@
 - 检索知识库中相关内容，显示具体检索到的文章列表
 
 [知识库问答](
-![Uploading 截屏2026-09-09 19.25.17.png…]()
+<img width="1403" height="780" alt="截屏2026-09-09 19 25 17" src="https://github.com/user-attachments/assets/be96e814-16b9-4886-8e1f-94248f591207" />
+
 
 
 )
