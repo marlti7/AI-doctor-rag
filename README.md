@@ -60,7 +60,7 @@
 
 - 用户可上传pdf/docx文档，然后提问，大模型会结合问题与文档内容进行总结输出
 
-![上传文档问答](https://github.com/Jevon-Zhong/AI-doctor-rag/blob/main/images/%E4%B8%8A%E4%BC%A0%E6%96%87%E6%A1%A3%E9%97%AE%E7%AD%94.png?raw=true)
+
 
 
 
