@@ -44,7 +44,10 @@
 - 点击知识库问答按钮可基于上传知识库文件相关内容进行分析回复
 - 检索知识库中相关内容，显示具体检索到的文章列表
 
-![知识库问答](https://github.com/Jevon-Zhong/AI-doctor-rag/blob/main/images/%E7%9F%A5%E8%AF%86%E5%BA%93%E9%97%AE%E7%AD%94.png?raw=true)
+![知识库问答](
+![Uploading 截屏2026-09-09 19.25.17.png…]()
+
+)
 
 
 
