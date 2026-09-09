@@ -23,7 +23,10 @@
 - MD格式展示
 - 回复附带严谨提示（仅供参考，具体应遵医嘱）
 
-![流式输出](https://github.com/Jevon-Zhong/AI-doctor-rag/blob/main/images/%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA.gif?raw=true)
+[流式输出](
+<img width="1425" height="810" alt="luzhi" src="https://github.com/user-attachments/assets/833ab0f2-4500-4fe1-a480-4b20c517ef73" />
+
+)
 
 
 
