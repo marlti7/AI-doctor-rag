@@ -68,7 +68,6 @@
 
 - 用户可上传图片，然后提问，大模型会使用多模态能力结合问题与图片内容进行总结输出
 
-![上传图片问答](https://github.com/Jevon-Zhong/AI-doctor-rag/blob/main/images/%E4%B8%8A%E4%BC%A0%E5%9B%BE%E7%89%87%E9%97%AE%E7%AD%94.png?raw=true)
 
 
 
@@ -76,7 +75,7 @@
 
 - 可选择工具列表中的工具来进行特殊功能操作（如图例的爬取网页内容操作）
 
-![MCP工具调用](https://github.com/Jevon-Zhong/AI-doctor-rag/blob/main/images/MCP%E5%B7%A5%E5%85%B7%E8%B0%83%E7%94%A8.png?raw=true)
+
 
 
 
