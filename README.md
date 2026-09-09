@@ -10,7 +10,10 @@
 - 保留和区分每个账号的对话记录
 - 可注册/登陆/退出账号
 
-![登陆注册](https://github.com/Jevon-Zhong/AI-doctor-rag/blob/main/images/%E7%99%BB%E9%99%86%E6%B3%A8%E5%86%8C.png?raw=true)
+![登陆注册](
+<img width="1419" height="776" alt="截屏2026-09-09 15 50 42" src="https://github.com/user-attachments/assets/1fd37943-4d4f-4441-98a2-d192366d244b" />
+
+)
 
 
 
